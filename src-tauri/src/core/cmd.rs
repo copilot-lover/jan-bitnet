@@ -2,7 +2,11 @@ use serde::{Deserialize, Serialize};
 use std::{fs, io, path::PathBuf};
 use tauri::{AppHandle, Manager, Runtime, State};
 
-use crate::core::{mcp::clean_up_mcp_servers, utils::extensions::inference_llamacpp_extension::cleanup::cleanup_processes};
+use crate::core::{
+    mcp::clean_up_mcp_servers,
+    utils::extensions::inference_llamacpp_extension::cleanup::cleanup_processes as cleanup_llama_processes,
+    utils::extensions::inference_bitnet_extension::cleanup::cleanup_processes as cleanup_bitnet_processes,
+};
 
 use super::{server, setup, state::AppState};
 
@@ -126,7 +130,8 @@ pub fn factory_reset(app_handle: tauri::AppHandle, state: State<'_, AppState>) {
 
     tauri::async_runtime::block_on(async {
         clean_up_mcp_servers(state.clone()).await;
-        cleanup_processes(state).await;
+        cleanup_llama_processes(state.clone()).await;
+        cleanup_bitnet_processes(state).await;
 
         if data_folder.exists() {
             if let Err(e) = fs::remove_dir_all(&data_folder) {
