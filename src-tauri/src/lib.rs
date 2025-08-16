@@ -1,5 +1,6 @@
 mod core;
-use core::utils::extensions::inference_llamacpp_extension::cleanup::cleanup_processes;
+use core::utils::extensions::inference_llamacpp_extension::cleanup::cleanup_processes as cleanup_llama_processes;
+use core::utils::extensions::inference_bitnet_extension::cleanup::cleanup_processes as cleanup_bitnet_processes;
 use core::{
     cmd::get_jan_data_folder_path,
     setup::{self, setup_mcp},
@@ -103,6 +104,16 @@ pub fn run() {
             core::utils::extensions::inference_llamacpp_extension::server::generate_api_key,
             core::utils::extensions::inference_llamacpp_extension::server::is_process_running,
             core::utils::extensions::inference_llamacpp_extension::gguf::read_gguf_metadata,
+            // bitnet extension
+            core::utils::extensions::inference_bitnet_extension::server::load_bitnet_model,
+            core::utils::extensions::inference_bitnet_extension::server::unload_bitnet_model,
+            core::utils::extensions::inference_bitnet_extension::server::get_devices,
+            core::utils::extensions::inference_bitnet_extension::server::get_random_port,
+            core::utils::extensions::inference_bitnet_extension::server::find_session_by_model,
+            core::utils::extensions::inference_bitnet_extension::server::get_loaded_models,
+            core::utils::extensions::inference_bitnet_extension::server::generate_api_key,
+            core::utils::extensions::inference_bitnet_extension::server::is_process_running,
+            core::utils::extensions::inference_bitnet_extension::gguf::read_gguf_metadata,
         ])
         .manage(AppState {
             app_token: Some(generate_app_token()),
@@ -113,6 +124,7 @@ pub fn run() {
             mcp_successfully_connected: Arc::new(Mutex::new(HashMap::new())),
             server_handle: Arc::new(Mutex::new(None)),
             llama_server_process: Arc::new(Mutex::new(HashMap::new())),
+            bitnet_server_process: Arc::new(Mutex::new(HashMap::new())),
         })
         .setup(|app| {
             app.handle().plugin(
@@ -150,7 +162,8 @@ pub fn run() {
 
                     tauri::async_runtime::block_on(async {
                         clean_up_mcp_servers(state.clone()).await;
-                        cleanup_processes(state).await;
+                        cleanup_llama_processes(state.clone()).await;
+                        cleanup_bitnet_processes(state).await;
                     });
                 }
             }
@@ -177,7 +190,8 @@ pub fn run() {
 
                     // Quick cleanup with shorter timeout
                     clean_up_mcp_servers(state.clone()).await;
-                    cleanup_processes(state).await;
+                    cleanup_llama_processes(state.clone()).await;
+                    cleanup_bitnet_processes(state).await;
                 });
             });
         }
